@@ -34,8 +34,10 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         pcntl
 
 # Redis extension via PECL (tidak ada di docker-php-ext-install)
-RUN pecl install redis && docker-php-ext-enable redis
-
+RUN apk add --no-cache $PHPIZE_DEPS linux-headers \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apk del $PHPIZE_DEPS linux-headers
 # ── php.ini production tweaks ─────────────────────────────────────────────────
 RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
     && sed -i \
