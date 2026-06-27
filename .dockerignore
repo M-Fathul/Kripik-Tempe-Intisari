@@ -1,28 +1,17 @@
-# ──────────────────────────────────────────────────────────────────────────────
-# .dockerignore — Root monorepo
-# Mencegah file-file besar/sensitif masuk ke Docker build context.
-# Berlaku untuk build context dari root (docker-compose.yml context: .)
-# ──────────────────────────────────────────────────────────────────────────────
-
-# Git
 .git
 .gitignore
 .gitattributes
 
-# Documentation & plans
 *.md
 *.plan.md
 
-# Editor
 .vscode
 .idea
 *.code-workspace
 
-# OS
 .DS_Store
 Thumbs.db
 
-# ── Laravel specifics ─────────────────────────────────────────────────────────
 kripik_tempe_intisari/.env
 kripik_tempe_intisari/.env.*
 !kripik_tempe_intisari/.env.example
@@ -36,16 +25,10 @@ kripik_tempe_intisari/storage/framework/views/*
 kripik_tempe_intisari/.phpunit.result.cache
 kripik_tempe_intisari/tests
 
-# ── Flask specifics ───────────────────────────────────────────────────────────
 ML_sevice_flask/.env
 ML_sevice_flask/.venv
 ML_sevice_flask/__pycache__
 ML_sevice_flask/app/__pycache__
 ML_sevice_flask/.pytest_cache
 
-# ── Docker build temps ────────────────────────────────────────────────────────
 docker-compose.override.yml
-
-# ── Data files (besar, tidak perlu di image) ──────────────────────────────────
-*.sql
-dumy.py

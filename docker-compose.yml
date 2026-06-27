@@ -1,21 +1,4 @@
-# ──────────────────────────────────────────────────────────────────────────────
-# docker-compose.yml  —  DEVELOPMENT
-#
-# Semua services untuk development lokal:
-#   nginx, app (Laravel PHP-FPM), queue, scheduler, flask, mysql, redis
-#
-# Penggunaan:
-#   docker compose up -d --build
-#   docker compose logs -f
-#   docker compose down
-#
-# Untuk production, gunakan overlay:
-#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
-# ──────────────────────────────────────────────────────────────────────────────
-
 services:
-
-  # ── Nginx (reverse proxy / web server) ──────────────────────────────────────
   nginx:
     image: nginx:alpine
     container_name: kti_nginx
@@ -23,7 +6,6 @@ services:
       - "${NGINX_PORT:-80}:80"
     volumes:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-      # Serve static assets langsung dari Nginx tanpa lewat PHP-FPM
       - ./kripik_tempe_intisari/public:/var/www/html/public:ro
     depends_on:
       app:
@@ -31,12 +13,11 @@ services:
     networks:
       - app-network
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost/nginx-health"]
+      test: [ "CMD", "wget", "-qO-", "http://localhost/nginx-health" ]
       interval: 30s
       timeout: 5s
       retries: 3
 
-  # ── Laravel App (PHP-FPM) ────────────────────────────────────────────────────
   app:
     build:
       context: .
@@ -45,7 +26,6 @@ services:
     env_file:
       - .env.docker
     volumes:
-      # Storage & cache harus writable — jangan mount seluruh app di production
       - laravel_storage:/var/www/html/storage
       - laravel_bootstrap_cache:/var/www/html/bootstrap/cache
     depends_on:
@@ -57,19 +37,18 @@ services:
       - app-network
       - ml-network
     healthcheck:
-      test: ["CMD", "php", "artisan", "db:show", "--no-interaction"]
+      test: [ "CMD", "php", "artisan", "db:show", "--no-interaction" ]
       interval: 30s
       timeout: 10s
       start_period: 60s
       retries: 3
 
-  # ── Laravel Queue Worker ──────────────────────────────────────────────────────
   queue:
     build:
       context: .
       dockerfile: docker/laravel/Dockerfile
     container_name: kti_queue
-    entrypoint: ["/bin/bash", "/docker/queue/entrypoint.sh"]
+    entrypoint: [ "/bin/bash", "/docker/queue/entrypoint.sh" ]
     env_file:
       - .env.docker
     volumes:
@@ -84,13 +63,12 @@ services:
       - ml-network
     restart: on-failure
 
-  # ── Laravel Scheduler ─────────────────────────────────────────────────────────
   scheduler:
     build:
       context: .
       dockerfile: docker/laravel/Dockerfile
     container_name: kti_scheduler
-    entrypoint: ["/bin/bash", "/docker/scheduler/entrypoint.sh"]
+    entrypoint: [ "/bin/bash", "/docker/scheduler/entrypoint.sh" ]
     env_file:
       - .env.docker
     volumes:
@@ -105,9 +83,6 @@ services:
       - ml-network
     restart: on-failure
 
-  # ── Flask ML Service ──────────────────────────────────────────────────────────
-  # PENTING: service ini TIDAK di-expose ke publik (tidak ada ports mapping).
-  # Hanya dapat diakses dari app/queue/scheduler via ml-network internal.
   flask:
     build:
       context: ./ML_sevice_flask
@@ -115,67 +90,57 @@ services:
     container_name: kti_flask
     env_file:
       - .env.docker
-    # Tidak ada `ports:` — sengaja untuk keamanan (hanya internal network)
     networks:
       - ml-network
     healthcheck:
-      test: ["CMD", "python", "-c",
-             "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')" ]
       interval: 30s
       timeout: 10s
-      start_period: 90s   # CmdStan/Prophet butuh waktu untuk load pertama kali
+      start_period: 90s
       retries: 3
 
-  # ── MySQL ─────────────────────────────────────────────────────────────────────
   mysql:
     image: mysql:8.0
     container_name: kti_mysql
     environment:
       MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD}"
-      MYSQL_DATABASE:      "${DB_DATABASE}"
-      MYSQL_USER:          "${DB_USERNAME}"
-      MYSQL_PASSWORD:      "${DB_PASSWORD}"
+      MYSQL_DATABASE: "${DB_DATABASE}"
+      MYSQL_USER: "${DB_USERNAME}"
+      MYSQL_PASSWORD: "${DB_PASSWORD}"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
       - app-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost",
-             "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}" ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
 
-  # ── Redis ─────────────────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: kti_redis
-    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    command: [ "redis-server", "--save", "60", "1", "--loglevel", "warning" ]
     volumes:
       - redis_data:/data
     networks:
       - app-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 3s
       retries: 5
 
-# ── Networks ───────────────────────────────────────────────────────────────────
 networks:
   app-network:
     driver: bridge
     name: kti_app_network
 
   ml-network:
-    # Flask hanya terhubung ke ml-network, bukan app-network.
-    # app/queue/scheduler terhubung ke KEDUA network sehingga bisa
-    # berkomunikasi dengan Flask tanpa Flask bisa diakses dari nginx.
     driver: bridge
     name: kti_ml_network
 
-# ── Volumes ────────────────────────────────────────────────────────────────────
 volumes:
   mysql_data:
     driver: local
