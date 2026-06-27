@@ -1,0 +1,22 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# .gitignore — Root monorepo (projek/)
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Docker secrets (JANGAN commit ke version control)
+.env.docker
+*.env.docker
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# ── Subproject gitignore rules ditangani oleh masing-masing subfolder ─────────
+# kripik_tempe_intisari/.gitignore  → Laravel
+# ML_sevice_flask/.gitignore        → Flask

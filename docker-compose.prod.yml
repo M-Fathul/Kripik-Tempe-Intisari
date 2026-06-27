@@ -1,0 +1,106 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# docker-compose.prod.yml  —  PRODUCTION OVERLAY
+#
+# Digunakan BERSAMA docker-compose.yml (bukan menggantikan):
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Override yang diterapkan:
+#   - restart: unless-stopped  (auto-restart setelah VPS reboot)
+#   - Resource limits          (cegah satu service monopoli CPU/RAM)
+#   - Logging driver dengan size limit (cegah disk penuh)
+#   - MySQL volume untuk persistence data production
+# ──────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  nginx:
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+
+  app:
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+
+  queue:
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+  scheduler:
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+
+  flask:
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          # Prophet + XGBoost CPU-intensive saat fitting — beri lebih banyak CPU
+          cpus: "2.0"
+          memory: 1G
+
+  mysql:
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+
+  redis:
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
